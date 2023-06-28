@@ -1,11 +1,10 @@
 from tkinter import *
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox, simpledialog
 from tkinter import Label, Toplevel
 from PIL import Image, ImageTk
 from plyer import notification
 from tkcalendar import Calendar
 import datetime; import os; import sqlite3; import hashlib; import uuid
-
 
 ### Global variable ###
 font_1              = 'Microsoft YaHei UI Light'
@@ -563,6 +562,7 @@ def main_app():
     app_root.configure(bg = "white")
 
     task_list =[]
+    #task_id =[]
     
 ######################################################################################################################################
     ###--- Background design ---###
@@ -698,24 +698,20 @@ def main_app():
 
     # Load task
     def load_tasks():
-        global username_input1
-        global task_list           # <<<<<< added global
-        cursor.execute(f"SELECT TASK_NAME, TASK_DUEDATE, TASK_ID FROM TASK WHERE COMPLETED = 0 and USERNAME = ? order by TASK_DUEDATE",(username_input1,))
+        global username_input1;global task_id; global task_list           # <<<<<< added global
+        cursor.execute(f"SELECT TASK_NAME, TASK_DUEDATE, TASK_ID FROM TASK WHERE COMPLETED = 0 and USERNAME = ?",(username_input1,))
         print (username_input1)
         #tasks = cursor.fetchall()
         row = cursor.fetchone()
         task_list =[]
-        #task_tree.delete(0,999)     
-        #task_tree.delete(*task_tree.get_children())
-        for item in task_tree.get_children():
-            task_tree.delete(item)
-        task_tree.size 
+        task_id =[]
+        listbox.delete(0,999)
         current_date = datetime.datetime.now().date()
 
         #for task in tasks:
         while row is not None:
 
-            content = row[0]; deadline = row[1]; column3 = row[2]         # Store Unique ID from table (to delete tasks)
+            content = row[0]; deadline = row[1]; column3 = row[2]            # Store Unique ID from table (to delete tasks)
             deadline_date = datetime.datetime.strptime(deadline, "%Y-%m-%d").date()
             days_left = (deadline_date - current_date).days
 
@@ -737,22 +733,22 @@ def main_app():
                 notification.notify(title=notification_title, message=notification_message, timeout = 5)
 
             task_list.append((content, deadline))
-            #task_tree.insert(END, f"{content} \nDeadline: {deadline}, Days Left: {days_left})")
-            task_tree.insert("", END, values=(content, deadline, days_left, column3))
+            task_id.append(column3)
+            listbox.insert(END, f"{content} \nDeadline: {deadline}, Days Left: {days_left})")
             row = cursor.fetchone()
 
 
     # Delete task
     def delete_task():
-        selected_task = task_tree.selection() #[0]
-        record_id = int(task_tree.item(selected_task, "value")[3])
-        print (record_id)
+        global task_id                  # <<<<<< called global to fetch task id from db
+        selected_task = listbox.curselection()[0]
+        print (selected_task)
         print ("Delete Task")
-    
-        if record_id > 0:           # <<<<<< safeguard
+        if selected_task is not None:           # <<<<<< safeguard
+            del_task = (task_id [int(selected_task)])
 
             try:
-                cursor.execute("DELETE FROM TASK WHERE TASK_ID = ?", (record_id,)) # <<<<<< using id instead of task name; prevents deletion of tasks with same name
+                cursor.execute("DELETE FROM TASK WHERE TASK_ID = ?", (del_task,)) # <<<<<< using id instead of task name; prevents deletion of tasks with same name
                 Connect.commit()
                 load_tasks()
                 #task_list.pop(index)
@@ -762,31 +758,32 @@ def main_app():
 
     # Edit task
     def edit_task():
-        selected_task = task_tree.selection()    # Initial: selected_task = task_tree.curselection()[0]
-        record_id = int(task_tree.item(selected_task, "value")[3])
+        global task_id
+        selected_task = listbox.curselection()[0]
         global refresh_task_list
 
-        if record_id > 0:
-            print ("Select task")
-            #print(int(selected_task[1:])-1)
-            #change_task = task_id [int(selected_task[1:])-1] # change_task = (task_id [int(selected_task[1:])])
-            #print(change_task)
+        if selected_task is not None:
+            change_task = (task_id [int(selected_task)])
+            print(change_task)
             refresh_task_list = True
-            edit_task2(record_id)
+            edit_task2(change_task)
 
 
 
     # Complete task
     def complete_task():
-        selected_task = task_tree.selection() #[0]
-        record_id = int(task_tree.item(selected_task, "value")[3])
-        task_name = task_tree.item(selected_task, "value")[0]
+        global task_id
+        selected_index = listbox.curselection()
+        index = int(selected_index[0])
+        selected_item = listbox.get(index)
+        selected_task = listbox.curselection()[0]
 
-        #task_name = selected_item.split(' (Deadline:')[0]  # Extract task name from selected item
-        if record_id > 0:
+        task_name = selected_item.split(' (Deadline:')[0]  # Extract task name from selected item
+        if selected_task is not None:
+            del_task = (task_id [int(selected_task)])
 
             try:
-                cursor.execute("UPDATE TASK SET COMPLETED = 1 WHERE TASK_ID = ?", (record_id,))
+                cursor.execute("UPDATE TASK SET COMPLETED = 1 WHERE TASK_ID = ?", (del_task,))
                 Connect.commit()
                 load_tasks()
         
@@ -864,7 +861,7 @@ def main_app():
             label_2.config(image= dark_sidebar)
             Heading.config(bg = "#2E1A47")
             frame1.config(bg = "#2E1A47")
-            #listbox.config(bg = "#2E1A47")
+            listbox.config(bg = "#2E1A47")
             delete_button.config(bg = "#2E1A47")
             edit_button.config(bg = "#2E1A47")
             complete_button.config(bg = "#2E1A47")
@@ -882,7 +879,7 @@ def main_app():
             label_2.config(image= New_Sidebar)
             Heading.config(bg = "#9960D1")
             frame1.config(bg = "#9960D1")
-            #listbox.config(bg = "#9960D1")
+            listbox.config(bg = "#9960D1")
             delete_button.config(bg = "#9960D1")
             edit_button.config(bg = "#9960D1")
             complete_button.config(bg = "#9960D1")
@@ -890,28 +887,6 @@ def main_app():
             toggle_mode.config(bg = "#9960D1")
 
             button_mode = True
-
-    class ToolTip:
-        def __init__(self, widget, text):
-            self.widget = widget
-            self.text = text
-            self.tooltip = None
-            self.widget.bind("<Enter>", self.show_tooltip)
-            self.widget.bind("<Leave>", self.hide_tooltip)
-
-        def show_tooltip(self, event):
-            x = self.widget.winfo_rootx() + self.widget.winfo_width()
-            y = self.widget.winfo_rooty() 
-            self.tooltip = Toplevel(self.widget)
-            self.tooltip.wm_overrideredirect(True)
-            self.tooltip.wm_geometry(f"+{x}+{y}")
-            label = Label(self.tooltip, text=self.text, background="#3B3B3B",foreground="white", relief=SOLID, borderwidth=1, padx=5, pady=5)
-            label.pack()
-
-        def hide_tooltip(self, event):
-            if self.tooltip:
-                self.tooltip.destroy()
-                self.tooltip = None    
 
     ######################################################################################################################################
     ###--- Main UI ---###
@@ -927,29 +902,18 @@ def main_app():
 
     # Task list frame
     frame1 = Frame(app_root, bd = 3, width = 700, height = 280, bg ="#9960D1" )
-    frame1.pack(padx = (50,0),pady = (100,0))
+    frame1.pack(pady = (100,0))
 
-    # Treeview to display tasks
-    task_tree = ttk.Treeview(frame1, columns=("Task Name", "Deadline", "Days Left", "Task_ID"), show="headings")
-    task_tree.pack(side= LEFT, fill= BOTH)
+    # Task List box
+    listbox = Listbox(frame1, font = "arial 12 bold", width = 80, height = 14, bg = "#9960D1", fg = "white", cursor = "hand2" , selectbackground = "black")
+    listbox.pack(side = LEFT, fill = BOTH, padx= 2)
 
     # Scroll bar
     scrollbar = Scrollbar(frame1)
     scrollbar.pack(side = RIGHT , fill = BOTH)
 
-    task_tree.config(yscrollcommand = scrollbar.set)
-    scrollbar.config(command = task_tree.yview)
-
-    #   Column headers
-    task_tree.column("Task Name", anchor = CENTER, width = 300, minwidth = 200, stretch = True )
-    task_tree.heading("Task Name", text = "Task Name")
-    task_tree.column("Deadline", anchor = CENTER, width = 70, minwidth = 70, stretch = False )
-    task_tree.heading("Deadline", text = "Deadline")
-    task_tree.column("Days Left", anchor = CENTER, width = 70, minwidth = 70, stretch = False )
-    task_tree.heading("Days Left", text = "Days Left")
-    task_tree.column("Task_ID", anchor = CENTER, width = 0, minwidth = 0, stretch = False )
-    task_tree.heading("Task_ID", text = "Task_ID")
-
+    listbox.config(yscrollcommand = scrollbar.set)
+    scrollbar.config(command = listbox.yview)
     load_tasks()
 
     ######################################################################################################################################
@@ -957,10 +921,9 @@ def main_app():
     # Add task button
     Add_button = Button(Usr_frame, text = "ADD", font = "arial 20 bold", width = 5, bg = "#8D50C7", fg = "white", bd=0, command = add_task)
     Add_button.place(x = 320, y = 0)
-    ToolTip(Add_button, "Add Task")
 
     # Delete task buttton
-    Image_path4 = os.path.join(resources_path, "delete_light.png")
+    Image_path4 = os.path.join(resources_path, "delete.png")
     image3 = Image.open(Image_path4)
 
     del_width = 50
@@ -971,10 +934,9 @@ def main_app():
     New_del = ImageTk.PhotoImage(resized_del)
     delete_button = Button(app_root, image = New_del , bg = "#9960D1", bd = 0, command = delete_task)
     delete_button.place(x = 862, y = 180)
-    ToolTip(delete_button, "Delete Task")
 
     # Edit task button
-    Image_path5 = os.path.join(resources_path, "edit_light.png")
+    Image_path5 = os.path.join(resources_path, "edit.png")
     image4 = Image.open(Image_path5)
 
     edit_width = 50
@@ -985,10 +947,9 @@ def main_app():
     New_edit = ImageTk.PhotoImage(resized_edit)
     edit_button = Button(app_root, image=New_edit, bg="#9960D1", bd = 0, command = edit_task)
     edit_button.place(x = 865, y = 280)
-    ToolTip(edit_button, "Edit Task")
 
     # Complete task button
-    Image_path6 = os.path.join(resources_path, "complete_light.png")
+    Image_path6 = os.path.join(resources_path, "complete.png")
     image5 = Image.open(Image_path6)
 
     complete_width = 50
@@ -999,14 +960,13 @@ def main_app():
     New_complete = ImageTk.PhotoImage(resized_complete)
     complete_button = Button(app_root, image=New_complete, bg="#9960D1", bd=0, command=complete_task)
     complete_button.place(x=862, y=380)
-    ToolTip(complete_button, "Mark as done")
 
     # Log out button
     logout_button = Button(app_root, text="Log Out",bg= "purple", fg="white", font="arial 14 bold", width=10, command=log_out)
     logout_button.place(x=100, y=20)
 
     # Calendar button
-    Image_path7 = os.path.join(resources_path, "calendar_light.png")
+    Image_path7 = os.path.join(resources_path, "calendar.png")
     image6 = Image.open(Image_path7)
 
     calendar_width = 50
@@ -1017,7 +977,6 @@ def main_app():
     New_calendar = ImageTk.PhotoImage(resized_calendar)
     calendar_button = Button(app_root, image=New_calendar, bg="#9960D1", bd=0, command= display_calendar)
     calendar_button.place(x=15,y=15)
-    ToolTip(calendar_button, "Task Calendar")
 
     # Theme change buton
     Image_path8 = os.path.join(resources_path, "light_mode.png")
@@ -1034,7 +993,6 @@ def main_app():
 
     toggle_mode = Button(app_root, width=173,height = 69, pady=7, image = lightmode_button, bd=0, bg = "#9960D1", command = system_theme)
     toggle_mode.place(x = 750, y = 2)
-    ToolTip(toggle_mode, "Switch Theme")
 
     self_refresh()
 
@@ -1058,7 +1016,6 @@ def edit_task2(task_id):                # get task_id to edit
             db_conn.commit()
             cursor_user.close()
             db_conn.close()
-            
             refresh_task_list = True
 
         else:
