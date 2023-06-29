@@ -13,7 +13,8 @@ global_path         = os.path.dirname(__file__)
 resources_path      = os.path.join(global_path, "resources")
 db_path             = os.path.join(global_path, "db")
 form_type           = 1
-refresh_task_list   = False
+
+
 
 ### Button config ###
 theme_button_mode               = True
@@ -77,6 +78,9 @@ def login():
     path_hide_password_button = os.path.join(resources_path, "hide_password.png")
     hide_password_button = PhotoImage(file=path_hide_password_button)
 
+    def on_enter(event):
+        signin()
+        
     def signin():
         global username_input1; global password_input1
         on_leave_username(None); on_leave_password(None)
@@ -243,7 +247,7 @@ def login():
 
     sign_in_button=Button(frame,width=39,pady=7,text='Sign In',bg='#57a1f8',fg='white',border=0,command=signin ).place(x=35,y=240)
     label=Label(frame,text="Don't have an account?",fg='black',bg='white',font=(font_1,9)).place(x=75,y=300)
-
+    
     sign_up = Button(frame,width= 6,text='Sign up', border = 0, bg = 'white',cursor ='hand2', fg='#57a1f8', command = registrationX).place(x=225,y=300)
 
     password_toggle_mode = Button(login_root, width=24,height = 24, pady=7, bd = 0, bg = 'white', command = toggle_password)
@@ -252,6 +256,7 @@ def login():
     login_status = Label(frame,text="",fg='white',bg='white')     
     login_status.place(x=75,y=330)
 
+    login_root.bind('<Return>', on_enter)
 
     toggle_password()                           # Triggers function once, turns to false state
 
@@ -282,6 +287,9 @@ def registration():
 
     path_hide_password_button = os.path.join(resources_path, "hide_password.png")
     hide_password_button = PhotoImage(file=path_hide_password_button)
+
+    def on_enter(event):
+        signup()
 
     def signup():
 
@@ -527,6 +535,7 @@ def registration():
     register_status = Label(frame, text = "",fg = 'white',bg = 'white')
     register_status.place(x=75,y=330)
 
+    registration_root.bind('<Return>', on_enter)
 
     toggle_password()
     toggle_confirm_password()
@@ -540,6 +549,9 @@ def main_app():
     global_path     = os.path.dirname(__file__)
     resources_path  = os.path.join(global_path, "resources")
     db_path         = os.path.join(global_path, "db")
+    global destroy_state
+    global refresh_task_list
+
 
     # Database
     path_db_file = os.path.join(db_path, "account.db")
@@ -563,6 +575,8 @@ def main_app():
     app_root.configure(bg = "white")
 
     task_list =[]
+    destroy_state = False
+    refresh_task_list   = False
     
 ######################################################################################################################################
     ###--- Background design ---###
@@ -613,16 +627,20 @@ def main_app():
     dark_sidebar = ImageTk.PhotoImage(resized_dsidebar)
 
     selected_date = ""
+    global task_notification
+    task_notification = True
 
 ######################################################################################################################################
     ###--- Function ---###
     def self_refresh():                             # <<<<< added func to continuously refresh list
         global refresh_task_list
+        global destroy_state
         if refresh_task_list:
             load_tasks()
             refresh_task_list = False
-        app_root.after(1000,self_refresh)
-        #print ("Refresh list")
+        if destroy_state == False:
+            app_root.after(500,self_refresh)
+        print ("Refresh list")
 
     # Input error
     def error_intput() :
@@ -638,6 +656,8 @@ def main_app():
     # Insert task
     def add_task():
         global username_input1
+        global task_notification
+        task_notification = False
         value = error_intput()
         if value == 0:
             return
@@ -690,16 +710,13 @@ def main_app():
 
 
 
-    def get_days_left(deadline):
-        deadline_date = datetime.datetime.strptime(deadline, "%Y-%m-%d").date()
-        current_date = datetime.datetime.now().date()
-        days_left = (deadline_date - current_date).days
-        return days_left
+
 
     # Load task
     def load_tasks():
         global username_input1
         global task_list           # <<<<<< added global
+        global task_notification
         cursor.execute(f"SELECT TASK_NAME, TASK_DUEDATE, TASK_ID FROM TASK WHERE COMPLETED = 0 and USERNAME = ? order by TASK_DUEDATE",(username_input1,))
         print (username_input1)
         #tasks = cursor.fetchall()
@@ -719,22 +736,24 @@ def main_app():
             deadline_date = datetime.datetime.strptime(deadline, "%Y-%m-%d").date()
             days_left = (deadline_date - current_date).days
 
-            if days_left < 0:
-                notification_title = "Task Reminder"
-                notification_message = f"Task:'{content}' is overdue!"
-                notification.notify(title=notification_title, message=notification_message, timeout = 5)
-            elif days_left == 0:
-                notification_title = "Task Reminder"
-                notification_message = f"Task: {content}\n\nDue date: Today"
-                notification.notify(title=notification_title, message=notification_message, timeout = 5)
-            elif days_left == 1:
-                notification_title = "Task Reminder"
-                notification_message = f"Task:'{content}' is due tomorrow!"
-                notification.notify(title=notification_title, message=notification_message, timeout = 5)  
-            elif days_left > 1 and days_left <= 7:
-                notification_title = "Task Reminder"
-                notification_message = f"Task: {content}\n\nDue date: {days_left} days"
-                notification.notify(title=notification_title, message=notification_message, timeout = 5)
+            if task_notification:
+
+                if days_left < 0:
+                    notification_title = "Task Reminder"
+                    notification_message = f"Task:'{content}' is overdue!"
+                    notification.notify(title=notification_title, message=notification_message, timeout = 5)
+                elif days_left == 0:
+                    notification_title = "Task Reminder"
+                    notification_message = f"Task: {content}\n\nDue date: Today"
+                    notification.notify(title=notification_title, message=notification_message, timeout = 5)
+                elif days_left == 1:
+                    notification_title = "Task Reminder"
+                    notification_message = f"Task:'{content}' is due tomorrow!"
+                    notification.notify(title=notification_title, message=notification_message, timeout = 5)  
+                elif days_left > 1 and days_left <= 7:
+                    notification_title = "Task Reminder"
+                    notification_message = f"Task: {content}\n\nDue date: {days_left} days"
+                    notification.notify(title=notification_title, message=notification_message, timeout = 5)
 
             task_list.append((content, deadline))
             #task_tree.insert(END, f"{content} \nDeadline: {deadline}, Days Left: {days_left})")
@@ -744,16 +763,18 @@ def main_app():
 
     # Delete task
     def delete_task():
+        global task_notification
         selected_task = task_tree.selection() #[0]
         record_id = int(task_tree.item(selected_task, "value")[3])
         print (record_id)
         print ("Delete Task")
-    
+
         if record_id > 0:           # <<<<<< safeguard
 
             try:
                 cursor.execute("DELETE FROM TASK WHERE TASK_ID = ?", (record_id,)) # <<<<<< using id instead of task name; prevents deletion of tasks with same name
                 Connect.commit()
+                task_notification = False
                 load_tasks()
                 #task_list.pop(index)
                 #listbox.delete(index)
@@ -771,13 +792,14 @@ def main_app():
             #print(int(selected_task[1:])-1)
             #change_task = task_id [int(selected_task[1:])-1] # change_task = (task_id [int(selected_task[1:])])
             #print(change_task)
-            refresh_task_list = True
+            refresh_task_list = False
             edit_task2(record_id)
 
 
 
     # Complete task
     def complete_task():
+        global task_notification
         selected_task = task_tree.selection() #[0]
         record_id = int(task_tree.item(selected_task, "value")[3])
         task_name = task_tree.item(selected_task, "value")[0]
@@ -788,6 +810,7 @@ def main_app():
             try:
                 cursor.execute("UPDATE TASK SET COMPLETED = 1 WHERE TASK_ID = ?", (record_id,))
                 Connect.commit()
+                task_notification = False
                 load_tasks()
         
                 notification_title = "Task Completed"
@@ -799,10 +822,18 @@ def main_app():
 
     # Log out function
     def log_out():
+        global destroy_state
+        destroy_state = True
         global form_type
         form_type = 1
-        app_root.destroy()
+        app_root.after(700,on_destroy)
+        global task_notification
+        task_notification = False
+        #app_root.destroy()
         #app_root.quit()  # Close the main window
+    
+    def on_destroy():
+        app_root.destroy()    
 
     # Display calendar
     def display_calendar():
@@ -865,8 +896,11 @@ def main_app():
             Heading.config(bg = "#2E1A47")
             frame1.config(bg = "#2E1A47")
             #listbox.config(bg = "#2E1A47")
+            #delete_button.config(image = darkmode_del_button)
             delete_button.config(bg = "#2E1A47")
-            edit_button.config(bg = "#2E1A47")
+            #edit_button.config(image = darkmode_edit_button)
+            edit_button.config (image = darkmode_edit_button,bg = "#2E1A47")
+            #complete_button.config(darkmode_complete_button)
             complete_button.config(bg = "#2E1A47")
             calendar_button.config(bg = "#2E1A47")
             toggle_mode.config(bg = "#2E1A47")
@@ -875,6 +909,7 @@ def main_app():
 
         else:
             #messagebox.showerror('Light',"Light Mode")
+            #delete_button.config(image = lightmode_deletebtn)
             toggle_mode.config(image = lightmode_button, bg = "white", activebackground = "white")
             app_root.config(bg = "white")
             Usr_frame.config(bg ="#9960D1")
@@ -883,14 +918,16 @@ def main_app():
             Heading.config(bg = "#9960D1")
             frame1.config(bg = "#9960D1")
             #listbox.config(bg = "#9960D1")
+            #delete_button.config(image = lightmode_del_button)
             delete_button.config(bg = "#9960D1")
-            edit_button.config(bg = "#9960D1")
+            #edit_button.config(image = lightmode_edit_button)
+            edit_button.config(image = lightmode_edit_button,bg = "#9960D1")
             complete_button.config(bg = "#9960D1")
             calendar_button.config(bg = "#9960D1")
             toggle_mode.config(bg = "#9960D1")
 
             button_mode = True
-
+        
     class ToolTip:
         def __init__(self, widget, text):
             self.widget = widget
@@ -912,7 +949,6 @@ def main_app():
             if self.tooltip:
                 self.tooltip.destroy()
                 self.tooltip = None    
-
     ######################################################################################################################################
     ###--- Main UI ---###
     # Frame of user input box
@@ -932,6 +968,12 @@ def main_app():
     # Treeview to display tasks
     task_tree = ttk.Treeview(frame1, columns=("Task Name", "Deadline", "Days Left", "Task_ID"), show="headings")
     task_tree.pack(side= LEFT, fill= BOTH)
+
+    
+
+    # Task List box
+    #listbox = Listbox(frame1, font = "arial 12 bold", width = 80, height = 15, bg = "#9960D1", fg = "white", cursor = "hand2" , selectbackground = "black")
+    #listbox.pack(side = LEFT, fill = BOTH, padx= 2)
 
     # Scroll bar
     scrollbar = Scrollbar(frame1)
@@ -954,22 +996,19 @@ def main_app():
 
     ######################################################################################################################################
     ###--- Button ---###
+
     # Add task button
     Add_button = Button(Usr_frame, text = "ADD", font = "arial 20 bold", width = 5, bg = "#8D50C7", fg = "white", bd=0, command = add_task)
     Add_button.place(x = 320, y = 0)
     ToolTip(Add_button, "Add Task")
 
     # Delete task buttton
-    Image_path4 = os.path.join(resources_path, "delete_light.png")
+    Image_path4 = os.path.join(resources_path, "delete.png")
     image3 = Image.open(Image_path4)
 
-    del_width = 50
-    del_height = 50
-
-    resized_del =image3.resize((del_width,del_height),Image.LANCZOS)
-
-    New_del = ImageTk.PhotoImage(resized_del)
-    delete_button = Button(app_root, image = New_del , bg = "#9960D1", bd = 0, command = delete_task)
+    delete_icon = ImageTk.PhotoImage(image3)
+    
+    delete_button = Button(app_root, image = delete_icon , bg = "#9960D1", bd = 0, command = delete_task)
     delete_button.place(x = 862, y = 180)
     ToolTip(delete_button, "Delete Task")
 
@@ -977,27 +1016,23 @@ def main_app():
     Image_path5 = os.path.join(resources_path, "edit_light.png")
     image4 = Image.open(Image_path5)
 
-    edit_width = 50
-    edit_height = 50
+    Image_path5a = os.path.join(resources_path, "edit_dark.png")
+    image4a = Image.open(Image_path5a)
 
-    resized_edit = image4.resize((edit_width, edit_height), Image.LANCZOS)
+    lightmode_edit_button = ImageTk.PhotoImage(image4)
+    darkmode_edit_button = ImageTk.PhotoImage(image4a)
 
-    New_edit = ImageTk.PhotoImage(resized_edit)
-    edit_button = Button(app_root, image=New_edit, bg="#9960D1", bd = 0, command = edit_task)
+    edit_button = Button(app_root, image = lightmode_edit_button, bg="#9960D1", bd = 0, command = edit_task)
     edit_button.place(x = 865, y = 280)
     ToolTip(edit_button, "Edit Task")
 
     # Complete task button
-    Image_path6 = os.path.join(resources_path, "complete_light.png")
+    Image_path6 = os.path.join(resources_path, "complete.png")
     image5 = Image.open(Image_path6)
 
-    complete_width = 50
-    complete_height = 50
+    complete_icon = ImageTk.PhotoImage(image5)
 
-    resized_complete = image5.resize((complete_width, complete_height), Image.LANCZOS)
-
-    New_complete = ImageTk.PhotoImage(resized_complete)
-    complete_button = Button(app_root, image=New_complete, bg="#9960D1", bd=0, command=complete_task)
+    complete_button = Button(app_root, image= complete_icon, bg="#9960D1", bd=0, command=complete_task)
     complete_button.place(x=862, y=380)
     ToolTip(complete_button, "Mark as done")
 
@@ -1006,16 +1041,12 @@ def main_app():
     logout_button.place(x=100, y=20)
 
     # Calendar button
-    Image_path7 = os.path.join(resources_path, "calendar_light.png")
+    Image_path7 = os.path.join(resources_path, "calendar.png")
     image6 = Image.open(Image_path7)
 
-    calendar_width = 50
-    calendar_height = 50
+    calendar_icon = ImageTk.PhotoImage(image6)
 
-    resized_calendar = image6.resize((calendar_width, calendar_height), Image.LANCZOS)
-
-    New_calendar = ImageTk.PhotoImage(resized_calendar)
-    calendar_button = Button(app_root, image=New_calendar, bg="#9960D1", bd=0, command= display_calendar)
+    calendar_button = Button(app_root, image=calendar_icon, bg="#9960D1", bd=0, command= display_calendar)
     calendar_button.place(x=15,y=15)
     ToolTip(calendar_button, "Task Calendar")
 
@@ -1042,6 +1073,8 @@ def main_app():
 
 def edit_task2(task_id):                # get task_id to edit
     def on_date_select():
+        global refresh_task_list
+        global task_notification
         selected_date = cal.get_date()
         print(selected_date,entry.get())
         # Update record into table
@@ -1050,7 +1083,6 @@ def edit_task2(task_id):                # get task_id to edit
         print (deadline_date)
 
         if deadline_date >= current_date:
-            global refresh_task_list
             print ("Update task")
             db_conn = sqlite3.connect(path_db_file)
             cursor_user = db_conn.cursor()
@@ -1060,6 +1092,7 @@ def edit_task2(task_id):                # get task_id to edit
             db_conn.close()
             
             refresh_task_list = True
+            task_notification = True
 
         else:
             print ("Error saving changes")
