@@ -89,7 +89,7 @@ def login():
 #   Login auth (version 1)
         if username is None or password is None:
             display_status(0)
-            print("Line 83")
+            #print("Line 83")
         else:
             db_conn = sqlite3.connect(path_db_file)
             cursor_user = db_conn.cursor()
@@ -102,7 +102,7 @@ def login():
             password_hash = encrypt_pw(salt_db,password)
             if password_hash_db != password_hash:
                 display_status(0)
-                print("Line 96")
+                #print("Line 96")
 
             else:
                 global form_type
@@ -112,7 +112,7 @@ def login():
 
         else:
             display_status(0)
-        print("Line 105")
+        #print("Line 105")
         pw.focus_set()
         if pw.get() == " Password":
             pw.delete(0,'end')
@@ -157,7 +157,7 @@ def login():
     def toggle_password():
         global password_button1_mode
 
-        print("Toggle password triggered (Line: 170)")
+        #print("Toggle password triggered (Line: 170)")
 
         if password_button1_mode:
             password_toggle_mode.config(image = show_password_button)
@@ -172,8 +172,8 @@ def login():
 ##########- Shows/Hide password -##########
     def password_mode():
         password = pw.get()
-        print("password_mode() ->Leave password     (Line: 185)")
-        print(password)
+        #print("password_mode() ->Leave password     (Line: 185)")
+        #print(password)
         if password != '' and password != ' Password':
             global password_input1
             password_input1 = password
@@ -204,7 +204,7 @@ def login():
 
     def on_leave_username(e):
         name = user.get()
-        print("On leave user")
+        #print("On leave user")
         if name == '':
             global username_input1
             user.insert(0,' Username')
@@ -298,7 +298,7 @@ def registration():
         on_leave_username(None); on_leave_password(None); on_leave_confirm_password(None)
 
         username=username_input2; password=password_input2; verify_password=confirm_password_input
-        print (username_input2,password_input2,confirm_password_input)
+        #print (username_input2,password_input2,confirm_password_input)
         
         isError = False
         if username is None or username == '':
@@ -315,7 +315,7 @@ def registration():
             isError = True
         
         if isError:
-            print("isError")
+            #print("isError")
             confirm_pw.focus_set()
             if confirm_pw.get() == " Confirm Password":
                 confirm_pw.delete(0,'end')
@@ -640,7 +640,7 @@ def main_app():
             refresh_task_list = False
         if destroy_state == False:
             app_root.after(500,self_refresh)
-        print ("Refresh list")
+        #print ("Refresh list")
 
     # Input error
     def error_intput() :
@@ -669,11 +669,11 @@ def main_app():
         content = task_entry.get()      
         #print("add_task2")
         deadline = selected_date
-        print (deadline)
+        #print (deadline)
         if deadline:
             current_date = datetime.datetime.now().date()
             deadline_date = datetime.datetime.strptime(deadline, "%m/%d/%y").date()
-            print (deadline_date)
+            #print (deadline_date)
 
             if deadline_date >= current_date:
                 cursor.execute("""INSERT INTO TASK (USERNAME, TASK_NAME, TASK_DUEDATE, COMPLETED) 
@@ -693,7 +693,7 @@ def main_app():
         def on_date_select():
             global selected_date
             selected_date = cal.get_date()
-            print("Selected Date:", selected_date)
+            #print("Selected Date:", selected_date)
             top.destroy()
             add_task2()                                     # <<<<<< executes func to add task + if-else conditions
             return
@@ -706,7 +706,7 @@ def main_app():
 
         confirm_btn = Button(top, text="Confirm Date", command=on_date_select)
         confirm_btn.pack(pady=10)
-        print ("on_date_select")
+        #print ("on_date_select")
 
 
 
@@ -718,7 +718,7 @@ def main_app():
         global task_list           # <<<<<< added global
         global task_notification
         cursor.execute(f"SELECT TASK_NAME, TASK_DUEDATE, TASK_ID FROM TASK WHERE COMPLETED = 0 and USERNAME = ? order by TASK_DUEDATE",(username_input1,))
-        print (username_input1)
+        #print (username_input1)
         #tasks = cursor.fetchall()
         row = cursor.fetchone()
         task_list =[]
@@ -766,8 +766,8 @@ def main_app():
         global task_notification
         selected_task = task_tree.selection() #[0]
         record_id = int(task_tree.item(selected_task, "value")[3])
-        print (record_id)
-        print ("Delete Task")
+        #print (record_id)
+        #print ("Delete Task")
 
         if record_id > 0:           # <<<<<< safeguard
 
@@ -788,7 +788,7 @@ def main_app():
         global refresh_task_list
 
         if record_id > 0:
-            print ("Select task")
+            #print ("Select task")
             #print(int(selected_task[1:])-1)
             #change_task = task_id [int(selected_task[1:])-1] # change_task = (task_id [int(selected_task[1:])])
             #print(change_task)
@@ -845,7 +845,7 @@ def main_app():
         
         calendar = Calendar(calendar_window, selectmode="day", background="white", foreground="black", selectbackground="blue", font="arial 16")
         calendar.pack(pady=10)
-        print("calendar func")
+        #print("calendar func")
         
         tasks = []
         for task in task_list:
@@ -866,7 +866,7 @@ def main_app():
             selected_date = calendar.selection_get()
             task_details_label.config(text="")
             tasks_on_selected_date = []
-            print(selected_date)
+            #print(selected_date)
 
             for i, task in enumerate(task_list):
                 task_date = datetime.datetime.strptime(task[1], "%Y-%m-%d").date()
@@ -1076,14 +1076,14 @@ def edit_task2(task_id):                # get task_id to edit
         global refresh_task_list
         global task_notification
         selected_date = cal.get_date()
-        print(selected_date,entry.get())
+        #print(selected_date,entry.get())
         # Update record into table
         current_date = datetime.datetime.now().date()
         deadline_date = datetime.datetime.strptime(selected_date, "%m/%d/%y").date()
-        print (deadline_date)
+        #print (deadline_date)
 
         if deadline_date >= current_date:
-            print ("Update task")
+            #print ("Update task")
             db_conn = sqlite3.connect(path_db_file)
             cursor_user = db_conn.cursor()
             cursor_user.execute("UPDATE TASK SET TASK_NAME = ?, TASK_DUEDATE = ? WHERE TASK_ID = ?" , (entry.get(), deadline_date, task_id))
@@ -1135,18 +1135,18 @@ def edit_task2(task_id):                # get task_id to edit
 ################################################################################
 def state():
     global form_type
-    print ("State successfully executed (Line: 1019)")
+    #print ("State successfully executed (Line: 1019)")
     while True:
         if form_type == 1:
             login()
         elif form_type == 2:
-            print ("Registration state executed (Line: 1024)")
+            #print ("Registration state executed (Line: 1024)")
             registration()
         elif form_type == 3:
             form_type = 999
-            print("Call ext lib")
+            #print("Call ext lib")
             main_app()
-            print ("Logging out...")
+            #print ("Logging out...")
         else:
             break
 ################################################################################      
