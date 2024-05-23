@@ -363,7 +363,7 @@ def registration():
 
 
 
-##########################################################################################################################################3            
+##########################################################################################################################################            
     #   Load vector file (.eps) using PIL
     path_register_logo = os.path.join(resources_path, "register.eps")
     image = Image.open(path_register_logo)
@@ -639,13 +639,12 @@ def main_app():
             load_tasks()
             refresh_task_list = False
         if destroy_state == False:
-            app_root.after(500,self_refresh)
-        #print ("Refresh list")
+            app_root.after(500,self_refresh)        #print ("Refresh list")
 
     # Input error
     def error_intput() :
         if task_entry.get() == "" :
-            messagebox.showerror("Input Error")
+            messagebox.showerror("Error","Task Name cannot be blank!")
             return 0
         return 1
 
@@ -1143,7 +1142,7 @@ def state():
             #print ("Registration state executed (Line: 1024)")
             registration()
         elif form_type == 3:
-            form_type = 999
+            form_type = 0
             #print("Call ext lib")
             main_app()
             #print ("Logging out...")
@@ -1159,5 +1158,9 @@ state()
 
 """
 1)  Why is root destroyed before going to next screen?
-    Releases memory (otherwise keeps opening new window; increases RAM usage) 
+    Releases memory (otherwise keeps opening new window; increases RAM usage)
+
+2)  Why form_type is used instead of directly calling specific modules
+    The previous windows do not terminate when done so, it just opens new window (increases memory usage over time)
+    ; hence the state must be defined in order to terminate previous windows (releases memory usage)
 """
